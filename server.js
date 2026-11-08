@@ -1,6 +1,7 @@
 
 const express = require("express");
 const http = require("http");
+const path = require("path");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -10,10 +11,22 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
+// Serve the auction website
+app.use(express.static(__dirname));
+
 app.get("/", (req, res) => {
-  res.send("JBK Auction Event Server Online");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// Website connection status
+app.get("/status", (req, res) => {
+  res.json({
+    status: "online",
+    project: "JBK Auction"
+  });
+});
+
+// TikTok LIVE connection
 async function startTikTok() {
   const username = process.env.TIKTOK_USERNAME;
 
@@ -22,35 +35,36 @@ async function startTikTok() {
     return;
   }
 
-  const { TikTokLiveConnection, WebcastEvent } =
-    await import("tiktok-live-connector");
-
-  const connection = new TikTokLiveConnection(username);
-
-  connection.on(WebcastEvent.GIFT, (event) => {
-    io.emit("gift", {
-      username: event.user?.displayId || "Unknown",
-      nickname: event.user?.nickname || "Viewer",
-      gift: event.giftDetails?.giftName || "Gift",
-      coins: event.giftDetails?.diamondCount || 0,
-      repeat: event.repeatCount || 1
-    });
-  });
-
-  connection.on(WebcastEvent.CHAT, (event) => {
-    io.emit("chat", {
-      username: event.user?.displayId || "Unknown",
-      comment: event.content || ""
-    });
-  });
-
-  connection.on("error", (error) => {
-    console.log("TikTok connection error:", error.message);
-  });
-
   try {
+    const { TikTokLiveConnection, WebcastEvent } =
+      await import("tiktok-live-connector");
+
+    const connection = new TikTokLiveConnection(username);
+
+    connection.on(WebcastEvent.GIFT, (event) => {
+      io.emit("gift", {
+        username: event.user?.displayId || "Unknown",
+        nickname: event.user?.nickname || "Viewer",
+        gift: event.giftDetails?.giftName || "Gift",
+        coins: event.giftDetails?.diamondCount || 0,
+        repeat: event.repeatCount || 1
+      });
+    });
+
+    connection.on(WebcastEvent.CHAT, (event) => {
+      io.emit("chat", {
+        username: event.user?.displayId || "Unknown",
+        comment: event.content || ""
+      });
+    });
+
+    connection.on("error", (error) => {
+      console.log("TikTok connection error:", error.message);
+    });
+
     await connection.connect();
     console.log("TikTok LIVE connected");
+
   } catch (error) {
     console.log("TikTok connection failed:", error.message);
   }
