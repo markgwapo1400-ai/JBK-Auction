@@ -1,149 +1,374 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>JBK Auction</title>
+<script src="/socket.io/socket.io.js"></script>
 <style>
 :root{--bg:#090b18;--panel:#111329;--line:#6542c8;--purple:#9c6cff;--gold:#ffd56a;--green:#42e58b;--muted:#9ba0bd}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 5%,#38206b 0,#15112f 34%,#080a16 75%);color:#f7f5ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:16px 12px 34px}
-.wrap{max-width:510px;margin:auto}.hero{text-align:center;padding:12px 8px 18px}
-.logo{width:118px;height:118px;border-radius:50%;margin:10px auto 12px;display:grid;place-items:center;background:linear-gradient(135deg,#6e37df,#c17cff,#ffcf66);padding:5px;box-shadow:0 0 35px #8a4dff70;animation:float 3s ease-in-out infinite}
-.logo span{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:#0b0c1b;border:3px solid #c6a4ff;font-size:30px;font-weight:1000;letter-spacing:2px}
-@keyframes float{50%{transform:translateY(-6px);box-shadow:0 0 48px #9c6cff99}}
-h1{font-size:25px;letter-spacing:5px;margin:4px 0;color:var(--gold)}.sub{font-size:11px;letter-spacing:3px;color:#b6a6df}
-.info{display:grid;gap:9px;margin:10px 0 14px}.pill{background:#111126;border:1px solid #57369d;border-radius:15px;padding:12px 15px;font-weight:800;box-shadow:0 5px 18px #0005}.pill.green{border-color:#238a5a;color:var(--green)}
-.board{border:2px solid #57399b;border-radius:28px;background:linear-gradient(160deg,#0c0b1aee,#080914f5);padding:20px 15px 17px;box-shadow:0 0 28px #8e4fff30;position:relative;overflow:hidden;animation:boardGlow 4s ease-in-out infinite}
-@keyframes boardGlow{50%{box-shadow:0 0 42px #8e4fff66}}
-.board:before{content:"";position:absolute;inset:-80% -30%;background:linear-gradient(110deg,transparent 42%,#ffffff0a 50%,transparent 58%);transform:translateX(-55%);animation:shine 7s linear infinite;pointer-events:none}
-@keyframes shine{to{transform:translateX(55%)}}
-.board>*{position:relative}.boardhead{text-align:center;color:var(--gold);font-size:21px;font-weight:1000;letter-spacing:5px}.domain{text-align:center;color:#77738e;font-size:10px;letter-spacing:3px;margin:2px 0 10px}
-.timer{font-size:clamp(48px,14vw,68px);font-weight:1000;letter-spacing:7px;text-align:center;color:#c8a0ff;text-shadow:0 0 18px #a66aff; font-variant-numeric:tabular-nums;margin:8px 0 15px}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% 5%,#38206b,#15112f 34%,#080a16 75%);color:#f7f5ff;font-family:system-ui,sans-serif;min-height:100vh;padding:16px 12px 34px}
+.wrap{max-width:510px;margin:auto}
+.hero{text-align:center;padding:12px 8px 18px}
+.logo{width:118px;height:118px;border-radius:50%;margin:10px auto 12px;display:grid;place-items:center;background:linear-gradient(135deg,#6e37df,#c17cff,#ffcf66);padding:5px;box-shadow:0 0 35px #8a4dff70}
+.logo span{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:#0b0c1b;border:3px solid #c6a4ff;font-size:30px;font-weight:1000}
+h1{font-size:25px;letter-spacing:5px;margin:4px 0;color:var(--gold)}
+.sub{font-size:11px;letter-spacing:3px;color:#b6a6df}
+.info{display:grid;gap:9px;margin:10px 0 14px}
+.pill{background:#111126;border:1px solid #57369d;border-radius:15px;padding:12px 15px;font-weight:800}
+.pill.green{border-color:#238a5a;color:var(--green)}
+.board{border:2px solid #57399b;border-radius:28px;background:linear-gradient(160deg,#0c0b1aee,#080914f5);padding:20px 15px 17px;box-shadow:0 0 28px #8e4fff30}
+.boardhead{text-align:center;color:var(--gold);font-size:21px;font-weight:1000;letter-spacing:5px}
+.domain{text-align:center;color:#77738e;font-size:10px;letter-spacing:3px;margin:2px 0 10px}
+.timer{font-size:clamp(48px,14vw,68px);font-weight:1000;letter-spacing:7px;text-align:center;color:#c8a0ff;text-shadow:0 0 18px #a66aff;margin:8px 0 15px}
 .status{text-align:center;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:10px}
-.players{display:grid;gap:9px}.player{display:grid;grid-template-columns:28px 40px minmax(0,1fr) auto;align-items:center;gap:9px;background:#171622;border:1px solid #494052;border-radius:17px;padding:9px 10px;min-height:62px;animation:pop .25s ease}
-@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.player.first{border-color:#b99a3e;background:linear-gradient(100deg,#342c1c,#171622)}.medal{text-align:center;font-size:19px}.avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#7752ff,#b77cff);border:2px solid #9a7bff}.pname{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.coins{color:var(--gold);font-weight:900;font-size:13px;white-space:nowrap}.coin{font-size:12px}.empty{text-align:center;padding:22px 5px;color:#85819b;font-size:13px}.total{text-align:center;color:#88859a;font-size:12px;margin-top:12px}
-.winner{display:none;margin-top:14px;border:1px solid #2fa96d;background:#0d2a20;border-radius:16px;padding:13px;text-align:center;color:#83ffc0}.winner strong{display:block;font-size:17px;margin:4px}
-.vouchbox{display:none;margin-top:10px;padding:13px;border:1px solid #2fa96d;border-radius:15px;background:#0b261d;text-align:center}.vouchbox p{margin:3px 0 9px;color:#a9ffcf;font-size:13px}
-input,button{font:inherit}input{min-width:0;width:100%;background:#090b18;border:1px solid #45405e;border-radius:10px;color:white;padding:11px;outline:none}input:focus{border-color:#a57bff}
-button{border:0;border-radius:11px;padding:11px 13px;font-weight:850;color:white;background:#6842c7;cursor:pointer}button:active{transform:scale(.98)}button.secondary{background:#29283b;border:1px solid #4a465f}button.greenbtn{background:#16864e}button.red{background:#9d3b4c}button.gold{background:#9c7420;color:#fff4cf}
-.panel{margin-top:18px;background:#101225;border:1px solid #383454;border-radius:20px;padding:16px;box-shadow:0 10px 28px #0005}.panel h2{font-size:16px;letter-spacing:2px;margin:0 0 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:6px;margin-bottom:10px}.field label{font-size:11px;color:#b8b3d0;font-weight:800;letter-spacing:.6px}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:5px}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.tiny{font-size:11px;color:#aaa6bf;line-height:1.5}.connect{border:1px dashed #7561a8;border-radius:14px;padding:12px;margin-top:10px}.connectstate{font-size:12px;color:#ffd77a;margin:7px 0}.notice{font-size:11px;color:#a9a5ba;line-height:1.5;margin-top:10px}.hidden{display:none!important}
+.players{display:grid;gap:9px}
+.player{display:grid;grid-template-columns:28px 40px minmax(0,1fr) auto;align-items:center;gap:9px;background:#171622;border:1px solid #494052;border-radius:17px;padding:9px 10px;min-height:62px}
+.player.first{border-color:#b99a3e;background:linear-gradient(100deg,#342c1c,#171622)}
+.medal{text-align:center;font-size:19px}
+.avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#7752ff,#b77cff);border:2px solid #9a7bff}
+.pname{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.coins{color:var(--gold);font-weight:900;font-size:13px;white-space:nowrap}
+.empty{text-align:center;padding:22px 5px;color:#85819b;font-size:13px}
+.total{text-align:center;color:#88859a;font-size:12px;margin-top:12px}
+.winner{display:none;margin-top:14px;border:1px solid #2fa96d;background:#0d2a20;border-radius:16px;padding:13px;text-align:center;color:#83ffc0}
+.winner strong{display:block;font-size:17px;margin:4px}
+.vouchbox{display:none;margin-top:10px;padding:13px;border:1px solid #2fa96d;border-radius:15px;background:#0b261d;text-align:center}
+.vouchbox p{color:#a9ffcf;font-size:13px}
+input,button{font:inherit}
+input{min-width:0;width:100%;background:#090b18;border:1px solid #45405e;border-radius:10px;color:white;padding:11px;outline:none}
+button{border:0;border-radius:11px;padding:11px 13px;font-weight:850;color:white;background:#6842c7;cursor:pointer}
+button.secondary{background:#29283b;border:1px solid #4a465f}
+button.greenbtn{background:#16864e}
+button.red{background:#9d3b4c}
+button.gold{background:#9c7420;color:#fff4cf}
+.panel{margin-top:18px;background:#101225;border:1px solid #383454;border-radius:20px;padding:16px;box-shadow:0 10px 28px #0005}
+.panel h2{font-size:16px;letter-spacing:2px;margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:6px;margin-bottom:10px}
+.field label{font-size:11px;color:#b8b3d0;font-weight:800}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:5px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+.tiny{font-size:11px;color:#aaa6bf;line-height:1.5}
+.connect{border:1px dashed #7561a8;border-radius:14px;padding:12px;margin-top:10px}
+.connectstate{font-size:12px;color:#ffd77a;margin:7px 0}
+.notice{font-size:11px;color:#a9a5ba;line-height:1.5;margin-top:10px}
 @media(min-width:440px){body{padding-top:24px}.board{padding:24px 20px}}
 </style>
 </head>
-<body><main class="wrap">
-<header class="hero"><div class="logo"><span>JBK</span></div><h1>★ JBK AUCTION ★</h1><div class="sub">LIVE AUCTION BOARD</div></header>
+<body>
+<main class="wrap">
+
+<header class="hero">
+<div class="logo"><span>JBK</span></div>
+<h1>★ JBK AUCTION ★</h1>
+<div class="sub">LIVE AUCTION BOARD</div>
+</header>
+
 <section class="info">
- <div class="pill">⭐ <span id="vouchDisplay">538</span> VOUCHES</div>
- <div class="pill green">☑️ <span id="minimumDisplay">NO MINIMUM</span></div>
- <div class="pill">🛡️ SNIPE DELAY <b id="delayDisplay" style="float:right;color:#c8a0ff">30s</b></div>
+<div class="pill">⭐ <span id="vouchDisplay">538</span> VOUCHES</div>
+<div class="pill green">☑️ <span id="minimumDisplay">NO MINIMUM</span></div>
+<div class="pill">🛡️ SNIPE DELAY <b id="delayDisplay" style="float:right;color:#c8a0ff">30s</b></div>
 </section>
+
 <section class="board">
- <div class="boardhead">★ JBK ★</div><div class="domain">JBK.AUCTION</div><div id="goalDisplay" style="text-align:center;color:#f4d27a;font-size:12px;font-weight:900;letter-spacing:1px;margin:8px 0">TOP 1 WIN — GET PERM KITSUNE</div>
- <div class="timer" id="timer">00:30</div><div class="status" id="status">WAITING TO START</div>
- <div class="players" id="players"><div class="empty">No bidders yet — waiting for gifts</div></div>
- <div class="total">Total participants: <span id="total">0</span></div>
- <div class="winner" id="winner"></div>
- <div class="vouchbox" id="vouchBox"><strong>🏆 WINNER — TYPE VOUCH</strong><p id="vouchPrompt">Winner, type VOUCH in chat to confirm.</p><div class="row"><input id="vouchInput" placeholder="Type VOUCH"><button class="greenbtn" id="vouchBtn">Submit</button></div><div class="tiny" id="vouchResult"></div></div>
+<div class="boardhead">★ JBK ★</div>
+<div class="domain">JBK.AUCTION</div>
+<div id="goalDisplay" style="text-align:center;color:#f4d27a;font-size:12px;font-weight:900;margin:8px 0">TOP 1 WIN — GET PERM KITSUNE</div>
+<div class="timer" id="timer">00:30</div>
+<div class="status" id="status">WAITING TO START</div>
+<div class="players" id="players">
+<div class="empty">No bidders yet — waiting for gifts</div>
+</div>
+<div class="total">Total participants: <span id="total">0</span></div>
+<div class="winner" id="winner"></div>
+<div class="vouchbox" id="vouchBox">
+<strong>🏆 WINNER — TYPE VOUCH</strong>
+<p id="vouchPrompt">Winner, type VOUCH in chat to confirm.</p>
+<div class="row">
+<input id="vouchInput" placeholder="Type VOUCH">
+<button class="greenbtn" id="vouchBtn">Submit</button>
+</div>
+<div class="tiny" id="vouchResult"></div>
+</div>
 </section>
+
 <section class="panel">
- <h2>⚙ JBK CONTROL PANEL</h2>
- <div class="grid2">
-  <div class="field"><label>AUCTION TIMER (SECONDS)</label><input id="timeInput" type="number" min="5" max="3600" value="30"></div>
-  <div class="field"><label>SNIPE DELAY (SECONDS)</label><input id="delayInput" type="number" min="0" max="600" value="30"></div>
-  <div class="field"><label>VOUCH COUNT</label><input id="vouchesInput" type="number" min="0" value="538"></div>
-  <div class="field"><label>MINIMUM TEXT</label><input id="minimumInput" value="NO MINIMUM" maxlength="28"></div>
- </div>
- <div class="field"><label>AUCTION / PRIZE TEXT</label><input id="goalInput" value="TOP 1 WIN — GET PERM KITSUNE" maxlength="60"></div>
- <div class="controls"><button class="greenbtn" id="startBtn">▶ START</button><button class="secondary" id="pauseBtn">Ⅱ PAUSE</button><button class="red" id="endBtn">■ END</button></div>
- <div class="tiny" style="margin-top:9px">Apply your display settings, then start the round. When the main timer reaches zero, the snipe-delay countdown begins.</div>
+<h2>⚙ JBK CONTROL PANEL</h2>
+<div class="grid2">
+<div class="field"><label>AUCTION TIMER (SECONDS)</label><input id="timeInput" type="number" min="5" max="3600" value="30"></div>
+<div class="field"><label>SNIPE DELAY (SECONDS)</label><input id="delayInput" type="number" min="0" max="600" value="30"></div>
+<div class="field"><label>VOUCH COUNT</label><input id="vouchesInput" type="number" min="0" value="538"></div>
+<div class="field"><label>MINIMUM COINS</label><input id="minimumInput" value="0" type="number" min="0"></div>
+</div>
+<div class="field"><label>AUCTION / PRIZE TEXT</label><input id="goalInput" value="TOP 1 WIN — GET PERM KITSUNE" maxlength="60"></div>
+<div class="controls">
+<button class="greenbtn" id="startBtn">▶ START</button>
+<button class="secondary" id="pauseBtn">Ⅱ PAUSE</button>
+<button class="red" id="endBtn">■ END</button>
+</div>
+<div class="tiny" style="margin-top:9px">Gifts update the leaderboard automatically. When the main timer reaches zero, the snipe-delay countdown begins.</div>
 </section>
+
 <section class="panel">
- <h2>🎁 TEST GIFT / MANUAL ENTRY</h2>
- <div class="field"><label>PLAYER TIKTOK NAME</label><input id="giftName" placeholder="@TikTokUsername"></div>
- <div class="field"><label>PROFILE IMAGE URL (OPTIONAL)</label><input id="giftAvatar" placeholder="https://..."></div>
- <div class="row"><div class="field"><label>COINS SENT</label><input id="giftCoins" type="number" min="1" value="100"></div><div class="field" style="justify-content:end"><button id="addGift" class="gold">＋ ADD TEST GIFT</button></div></div>
- <div class="notice">This button adds a simulated entry for preview/testing. It does not read real TikTok gifts or send anything to TikTok.</div>
+<h2>🎁 TEST GIFT / MANUAL ENTRY</h2>
+<div class="field"><label>PLAYER TIKTOK NAME</label><input id="giftName" placeholder="@TikTokUsername"></div>
+<div class="field"><label>PROFILE IMAGE URL (OPTIONAL)</label><input id="giftAvatar" placeholder="https://..."></div>
+<div class="row">
+<div class="field"><label>COINS SENT</label><input id="giftCoins" type="number" min="1" value="100"></div>
+<div class="field" style="justify-content:end"><button id="addGift" class="gold">＋ ADD TEST GIFT</button></div>
+</div>
+<div class="notice">Manual entries are simulated and do not represent real TikTok gifts.</div>
 </section>
+
 <section class="panel">
- <h2>🔗 TIKTOK LIVE CONNECTION</h2>
- <div class="field"><label>YOUR TIKTOK USERNAME</label><input id="username" placeholder="@yourusername"></div>
- <button id="connectBtn" class="secondary" style="width:100%">CONNECT SETUP</button>
- <div class="connect"><div class="connectstate" id="connectState">● NOT CONNECTED — DEMO MODE</div><div class="tiny">A username is not an event connection. Real-time gift events need a supported, authorized LIVE event provider or your own secure backend. This standalone HTML cannot authenticate to TikTok or receive LIVE gifts by itself.</div></div>
+<h2>🔗 TIKTOK LIVE CONNECTION</h2>
+<div class="field"><label>YOUR TIKTOK USERNAME</label><input id="username" placeholder="@bloxfruitauction"></div>
+<button id="connectBtn" class="secondary" style="width:100%">SAVE DISPLAY USERNAME</button>
+<div class="connect">
+<div class="connectstate" id="connectState">● CONNECTING TO JBK SERVER...</div>
+<div class="tiny">The username is for display only. The Render server uses its TIKTOK_USERNAME environment variable to connect to TikTok LIVE.</div>
+</div>
 </section>
-<p class="notice" style="text-align:center">JBK AUCTION • LOCAL DEMO BUILD • No TikTok account is accessed by this page.</p>
+
+<p class="notice" style="text-align:center">JBK AUCTION • LIVE EVENT BOARD</p>
 </main>
+
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
-let entries=[],mainLeft=30,delayLeft=30,phase='idle',tick=null,goal='TOP 1 WIN — GET PERM KITSUNE',winnerName='';
-const clamp=(n,min,max)=>Math.max(min,Math.min(max,Number(n)||0));
-function fmt(n){n=Math.max(0,Math.ceil(n));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
+let entries=[];
+let mainLeft=30;
+let delayLeft=30;
+let phase="idle";
+let tick=null;
+let goal="TOP 1 WIN — GET PERM KITSUNE";
+
+function addEntry(name,coins){
+ name=String(name||"Unknown");
+ coins=Number(coins)||0;
+ if(coins<=0)return;
+
+ const minimum=Math.max(0,Number($("minimumInput").value)||0);
+ if(coins<minimum)return;
+
+ let player=entries.find(p=>p.name.toLowerCase()===name.toLowerCase());
+
+ if(player)player.coins+=coins;
+ else entries.push({name,coins});
+
+ render();
+}
+
 function render(){
- const box=$('players');box.innerHTML='';
+ const box=$("players");
+ box.innerHTML="";
  const sorted=[...entries].sort((a,b)=>b.coins-a.coins);
- if(!sorted.length)box.innerHTML='<div class="empty">No bidders yet — waiting for gifts</div>';
+
+ if(!sorted.length){
+  box.innerHTML='<div class="empty">No bidders yet — waiting for gifts</div>';
+ }
+
  sorted.forEach((p,i)=>{
-  const el=document.createElement('div');el.className='player'+(i===0?' first':'');
-  const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'🎖️';
-  const avatar=document.createElement('div');avatar.className='avatar';
-  if(p.avatar){const im=document.createElement('img');im.src=p.avatar;im.alt='';im.className='avatar';im.onerror=()=>{im.remove()};avatar.replaceWith(im)}
-  const name=document.createElement('div');name.className='pname';name.textContent=p.name;
-  const coins=document.createElement('div');coins.className='coins';coins.textContent=p.coins.toLocaleString()+' 🪙';
-  const m=document.createElement('div');m.className='medal';m.textContent=medal;
-  el.append(m,avatar,name,coins);box.append(el);
+  const el=document.createElement("div");
+  el.className="player"+(i===0?" first":"");
+
+  const medal=document.createElement("div");
+  medal.className="medal";
+  medal.textContent=["🥇","🥈","🥉"][i]||"🎖️";
+
+  const avatar=document.createElement("div");
+  avatar.className="avatar";
+  avatar.textContent="👤";
+
+  const name=document.createElement("div");
+  name.className="pname";
+  name.textContent=p.name;
+
+  const coins=document.createElement("div");
+  coins.className="coins";
+  coins.textContent=p.coins.toLocaleString()+" 🪙";
+
+  el.append(medal,avatar,name,coins);
+  box.append(el);
  });
- $('total').textContent=sorted.length;
+
+ $("total").textContent=sorted.length;
 }
-function updateTimer(){ $('timer').textContent=fmt(phase==='delay'?delayLeft:mainLeft); }
-function stop(){if(tick){clearInterval(tick);tick=null}}
+
+function fmt(n){
+ n=Math.max(0,Math.ceil(n));
+ return String(Math.floor(n/60)).padStart(2,"0")+":"+
+ String(n%60).padStart(2,"0");
+}
+
+function updateTimer(){
+ $("timer").textContent=fmt(phase==="delay"?delayLeft:mainLeft);
+}
+
+function stop(){
+ if(tick){clearInterval(tick);tick=null;}
+}
+
 function finish(){
- stop();phase='ended';$('status').textContent='AUCTION ENDED';
+ stop();
+ phase="ended";
+ $("status").textContent="AUCTION ENDED";
+
  const top=[...entries].sort((a,b)=>b.coins-a.coins)[0];
- if(top){winnerName=top.name;$('winner').style.display='block';$('winner').innerHTML='🏆 TOP 1 WINNER<strong></strong><div class="tiny"></div>';
-  $('winner').querySelector('strong').textContent=top.name+' — '+top.coins.toLocaleString()+' coins';
-  $('winner').querySelector('.tiny').textContent=goal;
-  $('vouchBox').style.display='block';$('vouchPrompt').textContent=top.name+', type VOUCH in chat to confirm.';$('vouchInput').value='';$('vouchResult').textContent='';
- }else{$('winner').style.display='block';$('winner').textContent='No gifts received this round.'}
+ if(top){
+  $("winner").style.display="block";
+  $("winner").innerHTML='🏆 TOP 1 WINNER<strong></strong><div class="tiny"></div>';
+  $("winner").querySelector("strong").textContent=
+   top.name+" — "+top.coins.toLocaleString()+" coins";
+  $("winner").querySelector(".tiny").textContent=goal;
+  $("vouchBox").style.display="block";
+  $("vouchPrompt").textContent=top.name+", type VOUCH to confirm.";
+ }else{
+  $("winner").style.display="block";
+  $("winner").textContent="No gifts received this round.";
+ }
 }
+
 function startTick(){
- stop();tick=setInterval(()=>{
-  if(phase==='main'){mainLeft--;updateTimer();if(mainLeft<=0){
-    if(delayLeft>0){phase='delay';$('status').textContent='⚡ SNIPE DELAY — LAST CHANCE';updateTimer()}
-    else finish();
+ stop();
+ tick=setInterval(()=>{
+  if(phase==="main"){
+   mainLeft--;
+   updateTimer();
+   if(mainLeft<=0){
+    if(delayLeft>0){
+     phase="delay";
+     $("status").textContent="⚡ SNIPE DELAY — LAST CHANCE";
+     updateTimer();
+    }else finish();
    }
-  }else if(phase==='delay'){delayLeft--;updateTimer();if(delayLeft<=0)finish()}
+  }else if(phase==="delay"){
+   delayLeft--;
+   updateTimer();
+   if(delayLeft<=0)finish();
+  }
  },1000);
 }
-$('startBtn').onclick=()=>{
- if(phase==='idle'||phase==='ended'){mainLeft=clamp($('timeInput').value,5,3600);delayLeft=clamp($('delayInput').value,0,600);goal=$('goalInput').value.trim()||'TOP 1 WIN';$('goalDisplay').textContent=goal;$('winner').style.display='none';$('vouchBox').style.display='none';}
- if(phase==='paused'){/* resume remaining time */}
- if(phase==='idle'||phase==='ended'||phase==='paused'){if(phase==='ended')entries=[];phase=mainLeft<=0?'delay':'main';if(phase==='delay'&&delayLeft<=0){finish();return}}
- $('status').textContent=phase==='delay'?'⚡ SNIPE DELAY — LAST CHANCE':'● AUCTION LIVE';startTick();updateTimer();
+
+$("startBtn").onclick=()=>{
+ if(phase==="idle"||phase==="ended"){
+  mainLeft=Math.max(5,Math.min(3600,Number($("timeInput").value)||30));
+  delayLeft=Math.max(0,Math.min(600,Number($("delayInput").value)||0));
+  goal=$("goalInput").value.trim()||"TOP 1 WIN";
+  $("goalDisplay").textContent=goal;
+  $("winner").style.display="none";
+  $("vouchBox").style.display="none";
+  if(phase==="ended")entries=[];
+ }
+ if(phase==="idle"||phase==="ended"||phase==="paused"){
+  phase=mainLeft<=0?"delay":"main";
+  if(phase==="delay"&&delayLeft<=0){finish();return;}
+ }
+ $("status").textContent=phase==="delay"?"⚡ SNIPE DELAY":"● AUCTION LIVE";
+ startTick();
+ updateTimer();
 };
-$('pauseBtn').onclick=()=>{if(phase==='main'||phase==='delay'){stop();phase='paused';$('status').textContent='Ⅱ PAUSED'}};
-$('endBtn').onclick=finish;
-$('timeInput').onchange=()=>{if(phase==='idle'||phase==='ended'){mainLeft=clamp($('timeInput').value,5,3600);updateTimer()}};
-$('delayInput').onchange=()=>{$('delayDisplay').textContent=clamp($('delayInput').value,0,600)+'s'};
-$('vouchesInput').oninput=()=>{$('vouchDisplay').textContent=clamp($('vouchesInput').value,0,999999999).toLocaleString()};
-$('minimumInput').oninput=()=>{$('minimumDisplay').textContent=$('minimumInput').value||'NO MINIMUM'};
-$('applySettings')?.addEventListener('click',()=>{});
-$('addGift').onclick=()=>{
- const name=$('giftName').value.trim();const coins=clamp($('giftCoins').value,1,999999999);
- if(!name){$('giftName').focus();return}
- const existing=entries.find(x=>x.name.toLowerCase()===name.toLowerCase());
- if(existing){existing.coins+=coins;if($('giftAvatar').value.trim())existing.avatar=$('giftAvatar').value.trim()}
- else entries.push({name,coins,avatar:$('giftAvatar').value.trim()});
- render();
+
+$("pauseBtn").onclick=()=>{
+ if(phase==="main"||phase==="delay"){
+  stop();
+  phase="paused";
+  $("status").textContent="Ⅱ PAUSED";
+ }
 };
-$('vouchBtn').onclick=()=>{
- if($('vouchInput').value.trim().toUpperCase()==='VOUCH'){$('vouchResult').textContent='✓ VOUCH CONFIRMED IN THIS DEMO.';$('vouchesInput').value=clamp($('vouchesInput').value,0,999999999)+1;$('vouchDisplay').textContent=Number($('vouchesInput').value).toLocaleString()}
- else $('vouchResult').textContent='Please type VOUCH exactly.';
+
+$("endBtn").onclick=finish;
+
+$("delayInput").oninput=()=>{
+ $("delayDisplay").textContent=(Number($("delayInput").value)||0)+"s";
 };
-$('connectBtn').onclick=()=>{
- const u=$('username').value.trim();
- $('connectState').textContent=u?'● USERNAME SAVED: '+u+' — EVENT FEED NOT CONNECTED':'● ENTER A TIKTOK USERNAME FIRST';
- $('connectState').style.color=u?'#ffd77a':'#ff9c9c';
+
+$("minimumInput").oninput=()=>{
+ const n=Number($("minimumInput").value)||0;
+ $("minimumDisplay").textContent=n>0?n+" COINS":"NO MINIMUM";
 };
-$('delayDisplay').textContent='30s';updateTimer();render();
+
+$("vouchesInput").oninput=()=>{
+ $("vouchDisplay").textContent=(Number($("vouchesInput").value)||0).toLocaleString();
+};
+
+$("addGift").onclick=()=>{
+ const name=$("giftName").value.trim();
+ const coins=Number($("giftCoins").value)||0;
+ if(!name){$("giftName").focus();return;}
+ addEntry(name,coins);
+};
+
+$("vouchBtn").onclick=()=>{
+ if($("vouchInput").value.trim().toUpperCase()==="VOUCH"){
+  $("vouchResult").textContent="✓ VOUCH CONFIRMED IN THIS DEMO.";
+  $("vouchesInput").value=Number($("vouchesInput").value||0)+1;
+  $("vouchDisplay").textContent=Number($("vouchesInput").value).toLocaleString();
+ }else{
+  $("vouchResult").textContent="Please type VOUCH exactly.";
+ }
+};
+
+$("connectBtn").onclick=()=>{
+ const username=$("username").value.trim();
+ if(!username){
+  $("connectState").textContent="● ENTER A USERNAME";
+  return;
+ }
+ $("connectState").textContent="● DISPLAY USERNAME SAVED: "+username;
+};
+
+$("delayDisplay").textContent="30s";
+$("vouchDisplay").textContent=$("vouchesInput").value;
+$("minimumDisplay").textContent="NO MINIMUM";
+updateTimer();
+render();
+
+// Connect to the same Render server
+if(typeof io==="undefined"){
+ $("connectState").textContent="● SOCKET.IO CLIENT NOT AVAILABLE";
+ return;
+}
+
+const socket=io();
+
+socket.on("connect",()=>{
+ $("connectState").textContent="● SERVER CONNECTED — WAITING FOR TIKTOK LIVE";
+ $("connectState").style.color="#42e58b";
+});
+
+socket.on("disconnect",()=>{
+ $("connectState").textContent="● SERVER DISCONNECTED";
+ $("connectState").style.color="#ff7777";
+});
+
+socket.on("tiktok_status",data=>{
+ $("connectState").textContent=data.connected?
+ "● TIKTOK LIVE CONNECTED":"● WAITING FOR TIKTOK LIVE";
+ $("connectState").style.color=data.connected?"#42e58b":"#ffd77a";
+});
+
+// REAL gifts forwarded by server.js
+socket.on("gift",event=>{
+ console.log("TikTok gift received:",event);
+
+ const name=event.nickname||event.username||"Unknown";
+ const coins=Number(event.coins)||0;
+ const repeat=Math.max(1,Number(event.repeat)||1);
+
+ addEntry(name,coins*repeat);
+});
+
+// Chat events
+socket.on("chat",event=>{
+ console.log("TikTok chat:",event);
+});
+
 })();
-</script></body></html>
+</script>
+</body>
+</html>
