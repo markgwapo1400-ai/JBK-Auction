@@ -11,27 +11,28 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// Serve the auction website
+// Serve JBK Auction website
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Website connection status
+// Server status
 app.get("/status", (req, res) => {
   res.json({
+    project: "JBK Auction",
     status: "online",
-    project: "JBK Auction"
+    tiktok: "connection_pending"
   });
 });
 
-// TikTok LIVE connection
+// TikTok LIVE
 async function startTikTok() {
   const username = process.env.TIKTOK_USERNAME;
 
   if (!username) {
-    console.log("TIKTOK_USERNAME is not configured");
+    console.log("Missing TIKTOK_USERNAME");
     return;
   }
 
@@ -39,11 +40,13 @@ async function startTikTok() {
     const { TikTokLiveConnection, WebcastEvent } =
       await import("tiktok-live-connector");
 
-    const connection = new TikTokLiveConnection(username);
+    const connection = new TikTokLiveConnection(username, {
+      processInitialData: false
+    });
 
     connection.on(WebcastEvent.GIFT, (event) => {
       io.emit("gift", {
-        username: event.user?.displayId || "Unknown",
+        username: event.user?.uniqueId || "Unknown",
         nickname: event.user?.nickname || "Viewer",
         gift: event.giftDetails?.giftName || "Gift",
         coins: event.giftDetails?.diamondCount || 0,
@@ -53,20 +56,30 @@ async function startTikTok() {
 
     connection.on(WebcastEvent.CHAT, (event) => {
       io.emit("chat", {
-        username: event.user?.displayId || "Unknown",
-        comment: event.content || ""
+        username: event.user?.uniqueId || "Unknown",
+        comment: event.comment || event.content || ""
       });
     });
 
-    connection.on("error", (error) => {
-      console.log("TikTok connection error:", error.message);
+    connection.on("connected", () => {
+      console.log("TikTok LIVE connected!");
+      io.emit("tiktok_status", { connected: true });
     });
 
+    connection.on("disconnected", () => {
+      console.log("TikTok LIVE disconnected");
+      io.emit("tiktok_status", { connected: false });
+    });
+
+    connection.on("error", (error) => {
+      console.log("TikTok event error:", error);
+    });
+
+    console.log("Connecting to TikTok LIVE:", username);
     await connection.connect();
-    console.log("TikTok LIVE connected");
 
   } catch (error) {
-    console.log("TikTok connection failed:", error.message);
+    console.error("TikTok connection failed:", error);
   }
 }
 
